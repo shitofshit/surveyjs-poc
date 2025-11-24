@@ -1,16 +1,17 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
-import surveyReducer from './surveySlice';
-import { combineReducers } from 'redux';
+import { configureStore } from "@reduxjs/toolkit";
+import { persistStore, persistReducer } from "redux-persist";
+import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
+import surveyReducer from "./surveySlice";
+import { combineReducers } from "redux";
 
 const rootReducer = combineReducers({
   survey: surveyReducer,
 });
 
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage,
+  version: 1,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

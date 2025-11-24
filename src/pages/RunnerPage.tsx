@@ -27,10 +27,16 @@ const RunnerPage: React.FC = () => {
   if (!surveyJson) {
     return (
       <div className="flex justify-content-center align-items-center h-screen">
-        <Card title="No Survey Found" className="text-center">
+        <Card
+          title="No Survey Found"
+          className="text-center flex flex-1 align-items-center justify-content-center"
+          style={{
+            maxWidth: "50rem",
+          }}
+        >
           <p className="m-0 mb-3">Please create a survey first.</p>
           <Link to="/creator">
-            <Button label="Go to Creator" />
+            <Button label="Go to Creator" severity="danger" />
           </Link>
         </Card>
       </div>
