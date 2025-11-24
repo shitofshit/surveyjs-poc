@@ -4,10 +4,15 @@ import "survey-core/survey-core.min.css";
 import "survey-creator-core/survey-creator-core.min.css";
 import { useDispatch } from "react-redux";
 import { setSurveyJson } from "../store/surveySlice";
+import SurveyCreatorTheme from "survey-creator-core/themes";
+import { registerCreatorTheme, registerSurveyTheme } from "survey-creator-core";
+import SurveyTheme from "survey-core/themes";
 
 const creatorOptions = {
   showLogicTab: false,
   isAutoSave: false,
+  showThemeTab: true,
+  showJsonEditorTab: false,
 };
 
 const CreatorPage: React.FC = () => {
@@ -16,6 +21,10 @@ const CreatorPage: React.FC = () => {
 
   useEffect(() => {
     const newCreator = new SurveyCreator(creatorOptions);
+    newCreator.applyCreatorTheme(SurveyCreatorTheme.DefaultContrast);
+
+    registerCreatorTheme(SurveyCreatorTheme);
+    registerSurveyTheme(SurveyTheme);
     newCreator.saveSurveyFunc = (
       saveNo: number,
       callback: (no: number, isSuccess: boolean) => void
