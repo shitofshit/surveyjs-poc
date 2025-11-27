@@ -132,6 +132,126 @@ app.get("/surveyjs/api/users", async (req, res) => {
   }
 });
 
+// POST save survey response
+app.post("/surveyjs/api/responses", async (req, res) => {
+  const {
+    surveyId,
+    userId,
+    responseData,
+    isCompleted,
+    score,
+    totalQuestions,
+    scorePercentage,
+  } = req.body;
+  try {
+    // Check for existing incomplete response
+    const checkRequest = new sql.Request();
+    checkRequest.input("surveyId", sql.Int, surveyId);
+    checkRequest.input("userId", sql.Int, userId);
+
+    const checkResult = await checkRequest.query`
+      SELECT TOP 1 Id, IsCompleted 
+      FROM SurveyResponses 
+      WHERE SurveyId = @surveyId AND UserId = @userId 
+      ORDER BY CreatedAt DESC
+    `;
+
+    let existingId = null;
+    if (checkResult.recordset.length > 0) {
+      const lastResponse = checkResult.recordset[0];
+      if (!lastResponse.IsCompleted) {
+        existingId = lastResponse.Id;
+      }
+    }
+
+    const request = new sql.Request();
+    request.input("surveyId", sql.Int, surveyId);
+    request.input("userId", sql.Int, userId);
+    request.input("responseData", sql.NVarChar, JSON.stringify(responseData));
+    request.input("isCompleted", sql.Bit, isCompleted || false);
+    request.input("score", sql.Int, score !== undefined ? score : null);
+    request.input(
+      "totalQuestions",
+      sql.Int,
+      totalQuestions !== undefined ? totalQuestions : null
+    );
+    request.input(
+      "scorePercentage",
+      sql.Decimal(5, 2),
+      scorePercentage !== undefined ? scorePercentage : null
+    );
+
+    if (existingId) {
+      // UPDATE existing incomplete response
+      request.input("id", sql.Int, existingId);
+      if (isCompleted) {
+        await request.query`
+            UPDATE SurveyResponses 
+            SET ResponseData = @responseData, 
+                IsCompleted = @isCompleted, 
+                CompletedAt = GETDATE(),
+                Score = @score,
+                TotalQuestions = @totalQuestions,
+                ScorePercentage = @scorePercentage
+            WHERE Id = @id
+         `;
+      } else {
+        await request.query`
+            UPDATE SurveyResponses 
+            SET ResponseData = @responseData,
+                Score = @score,
+                TotalQuestions = @totalQuestions,
+                ScorePercentage = @scorePercentage
+            WHERE Id = @id
+         `;
+      }
+      res.status(200).json({ message: "Response updated" });
+    } else {
+      // INSERT new response
+      if (isCompleted) {
+        await request.query`
+          INSERT INTO SurveyResponses (SurveyId, UserId, ResponseData, IsCompleted, CompletedAt, Score, TotalQuestions, ScorePercentage)
+          VALUES (@surveyId, @userId, @responseData, @isCompleted, GETDATE(), @score, @totalQuestions, @scorePercentage)
+        `;
+      } else {
+        await request.query`
+          INSERT INTO SurveyResponses (SurveyId, UserId, ResponseData, IsCompleted, Score, TotalQuestions, ScorePercentage)
+          VALUES (@surveyId, @userId, @responseData, @isCompleted, @score, @totalQuestions, @scorePercentage)
+        `;
+      }
+      res.status(201).json({ message: "Response saved" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// GET survey response for a user
+app.get("/surveyjs/api/responses", async (req, res) => {
+  const { surveyId, userId } = req.query;
+  try {
+    const request = new sql.Request();
+    request.input("surveyId", sql.Int, surveyId);
+    request.input("userId", sql.Int, userId);
+
+    const result = await request.query`
+      SELECT TOP 1 * FROM SurveyResponses 
+      WHERE SurveyId = @surveyId AND UserId = @userId 
+      ORDER BY CreatedAt DESC
+    `;
+
+    if (result.recordset.length > 0) {
+      res.json(result.recordset[0]);
+    } else {
+      res.status(404).json({ message: "No response found" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

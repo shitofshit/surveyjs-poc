@@ -63,3 +63,46 @@ export const updateSurvey = async (
   }
   return response.json();
 };
+
+export const saveResponse = async (
+  surveyId: number,
+  userId: number,
+  responseData: any,
+  isCompleted: boolean = true,
+  score?: number,
+  totalQuestions?: number,
+  scorePercentage?: number
+) => {
+  const response = await fetch(`${API_URL}/responses`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      surveyId,
+      userId,
+      responseData,
+      isCompleted,
+      score,
+      totalQuestions,
+      scorePercentage,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to save response");
+  }
+  return response.json();
+};
+
+export const getResponse = async (surveyId: number, userId: number) => {
+  const response = await fetch(
+    `${API_URL}/responses?surveyId=${surveyId}&userId=${userId}`
+  );
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error("Failed to get response");
+  }
+  return response.json();
+};

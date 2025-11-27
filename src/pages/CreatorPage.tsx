@@ -45,7 +45,24 @@ const CreatorPage: React.FC = () => {
 
         // Load all surveys for selection
         const surveysData = await getSurveys();
-        setSurveys(surveysData);
+
+        // Add DisplayTitle from JSON
+        const surveysWithDisplayTitle = surveysData.map((survey: any) => {
+          try {
+            const jsonContent = JSON.parse(survey.JsonContent);
+            return {
+              ...survey,
+              DisplayTitle: jsonContent.title || survey.Title || "Survey Default Name"
+            };
+          } catch {
+            return {
+              ...survey,
+              DisplayTitle: survey.Title || "Survey Default Name"
+            };
+          }
+        });
+
+        setSurveys(surveysWithDisplayTitle);
       } catch (err) {
         console.error("Failed to load data", err);
       }
@@ -91,19 +108,41 @@ const CreatorPage: React.FC = () => {
         try {
           const userIds = selectedUsers.map(u => u.Id);
 
+          // Extract title from survey JSON, fallback to "My Survey"
+          const surveyTitle = creator.JSON.title || "My Survey";
+
           if (isEditMode && selectedSurvey) {
             // Update existing survey
-            await updateSurvey(selectedSurvey.Id, selectedSurvey.Title || "My Survey", creator.JSON, userIds);
+            const result = await updateSurvey(selectedSurvey.Id, surveyTitle, creator.JSON, userIds);
+            console.log("Survey updated:", result);
           } else {
             // Create new survey
-            await createSurvey("My Survey", creator.JSON, userIds);
+            const result = await createSurvey(surveyTitle, creator.JSON, userIds);
+            console.log("Survey created:", result);
           }
 
           callback(saveNo, true);
 
           // Refresh surveys list
           const surveysData = await getSurveys();
-          setSurveys(surveysData);
+
+          // Re-add DisplayTitle to refreshed surveys
+          const surveysWithDisplayTitle = surveysData.map((survey: any) => {
+            try {
+              const jsonContent = JSON.parse(survey.JsonContent);
+              return {
+                ...survey,
+                DisplayTitle: jsonContent.title || survey.Title || "Survey Default Name"
+              };
+            } catch {
+              return {
+                ...survey,
+                DisplayTitle: survey.Title || "Survey Default Name"
+              };
+            }
+          });
+
+          setSurveys(surveysWithDisplayTitle);
         } catch (error) {
           console.error("Failed to save survey", error);
           callback(saveNo, false);
@@ -128,7 +167,7 @@ const CreatorPage: React.FC = () => {
           value={selectedSurvey}
           options={surveys}
           onChange={(e) => setSelectedSurvey(e.value)}
-          optionLabel="Title"
+          optionLabel="DisplayTitle"
           placeholder="New Survey"
           className="w-15rem"
           showClear
